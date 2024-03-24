@@ -4,3 +4,7 @@ db/db_config.py
 # Ignore Python pycache files
 /__pycache__/
 **/__pycache__/
+
+# Ignore detecting language model files
+routes/api/detectlang/lid.176.bin
+routes/api/detectlang/lid.176.ftz
