@@ -88,6 +88,11 @@ def api_challenge_achieve():
 def api_challenge_verify():
     return handle_request('/api/challenge/verify', request.method)
 
+# 서비스 버전 정보
+@app.route('/version', methods=['GET', 'POST'])
+def version():
+    return handle_request('/version', request.method)
+
 # 기타 엔드포인트를 여기에 추가...
 
 if __name__ == '__main__':
