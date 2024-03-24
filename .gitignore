@@ -1,0 +1,6 @@
+.env
+db/db_config.py
+
+# Ignore Python pycache files
+/__pycache__/
+**/__pycache__/
