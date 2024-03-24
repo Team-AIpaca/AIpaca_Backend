@@ -1,3 +1,5 @@
+# app.py
+
 from flask import Flask, request, Response
 from flask_cors import CORS
 import os
@@ -92,6 +94,11 @@ def api_challenge_verify():
 @app.route('/version', methods=['GET', 'POST'])
 def version():
     return handle_request('/version', request.method)
+
+# 공지사항
+@app.route('/notice', methods=['GET', 'POST'])
+def notice():
+    return handle_request('/notice', request.method)
 
 # 기타 엔드포인트를 여기에 추가...
 
