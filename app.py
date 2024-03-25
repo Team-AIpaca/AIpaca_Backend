@@ -1,6 +1,6 @@
 # app.py
 
-from flask import Flask, request, Response
+from flask import Flask, request, Response, send_from_directory
 from flask_cors import CORS
 import os
 import json
@@ -39,10 +39,12 @@ def handle_request(endpoint_path, method):
     return response_format(data, status_code, content_type)
 
 # 공통 라우트 핸들러를 사용하여 엔드포인트 정의
+# 서버 연결 확인용 ping 라우트
 @app.route('/ping', methods=['GET', 'POST'])
 def ping():
     return handle_request('/ping', request.method)
 
+# 언어 감지
 @app.route('/api/detectlang', methods=['GET', 'POST'])
 def api_detectlang():
     return handle_request('/api/detectlang', request.method)
@@ -78,6 +80,17 @@ def api_evaluation_gpt():
 @app.route('/api/user/signup', methods=['GET', 'POST'])
 def api_user_signup():
     return handle_request('/api/user/signup', request.method)
+
+# 약관 정보
+@app.route('/terms', methods=['GET', 'POST'])
+def terms():
+    return handle_request('/terms', request.method)
+
+# 마크다운 파일을 직접 제공하는 엔드포인트를 추가
+@app.route('/terms/<path:filename>', methods=['GET', 'POST'])
+def terms_of_service(filename):
+    # 안전하게 파일 경로를 구성하기 위해 os.path.join 사용
+    return send_from_directory(os.path.join(app.root_path, 'terms'), filename)
 
 # 로그인
 @app.route('/api/user/login', methods=['GET', 'POST'])

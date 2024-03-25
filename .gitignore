@@ -8,3 +8,6 @@ db/db_config.py
 # Ignore detecting language model files
 routes/api/detectlang/lid.176.bin
 routes/api/detectlang/lid.176.ftz
+
+# Ignore cache files
+routes/notice/cache
