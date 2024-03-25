@@ -1,4 +1,5 @@
 # routes/api/detectlang/get.py
+
 import sys
 import json
 import fasttext

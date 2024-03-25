@@ -1,3 +1,5 @@
+# routes/version/get.py
+
 import datetime
 import os
 import sys
@@ -20,17 +22,18 @@ def get_service_version():
     return get_env_variable('SERVICE_VERSION')
 
 # 현재 UTC 시간을 ISO 형식 문자열로 반환하는 함수
-def get_current_utc_time_iso():
-    return datetime.datetime.utcnow().isoformat()
+def get_current_utc_time():
+    utc_timezone = datetime.timezone.utc
+    return datetime.datetime.now(utc_timezone).isoformat()
 
 # 응답 구성 및 반환 함수
 def get_response(request_params):
     service_version = get_service_version()
     response_data = {
         "StatusCode": 200,
-        "message": f"Successful version information request",
+        "message": "Successful version information request",
         "data": {
-            "RequestTime": get_current_utc_time_iso(),
+            "RequestTime": get_current_utc_time(),
             "Version": service_version
         }
     }

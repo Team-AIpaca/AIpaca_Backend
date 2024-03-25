@@ -1,3 +1,5 @@
+# routes/api/trans/deepl/get.py
+
 import datetime
 import json  # JSON 처리를 위해 추가
 import deepl  # DeepL 번역을 위해 deepl 라이브러리를 임포트

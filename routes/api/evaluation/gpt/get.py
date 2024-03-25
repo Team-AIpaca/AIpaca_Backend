@@ -1,4 +1,4 @@
-# routes/api/user/signup/get.py
+# routes/api/evaluation/gpt/get.py
 
 import datetime
 
