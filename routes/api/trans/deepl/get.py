@@ -1,3 +1,5 @@
+# routes/api/trans/deepl/get.py
+
 import datetime
 import json  # JSON 처리를 위해 추가
 from urllib.parse import unquote

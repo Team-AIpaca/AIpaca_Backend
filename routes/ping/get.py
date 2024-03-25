@@ -1,4 +1,5 @@
 # routes/ping/get.py
+
 import datetime
 
 # UTC 타임존 객체 생성 및 현재 시간을 UTC로 가져오기

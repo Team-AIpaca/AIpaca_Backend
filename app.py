@@ -64,10 +64,15 @@ def api_trans_libretranslate():
    return handle_request('/api/trans/libretranslate', request.method)
 
 # 번역 평가
-# Gemini
+## Gemini
 @app.route('/api/evaluation/gemini', methods=['GET', 'POST'])
 def api_evaluation_gemini():
     return handle_request('/api/evaluation/gemini', request.method)
+
+## GPT
+@app.route('/api/evaluation/gpt', methods=['GET', 'POST'])
+def api_evaluation_gpt():
+    return handle_request('/api/evaluation/gpt', request.method)
 
 # 회원가입
 @app.route('/api/user/signup', methods=['GET', 'POST'])
@@ -80,12 +85,12 @@ def api_user_login():
     return handle_request('/api/user/login', request.method)
 
 # 도전 과제
-# 도전 과제 달성
+## 도전 과제 달성
 @app.route('/api/challenge/achieve', methods=['GET', 'POST'])
 def api_challenge_achieve():
     return handle_request('/api/challenge/achieve', request.method)
 
-# 도전 과제 달성 목록
+## 도전 과제 달성 목록
 @app.route('/api/challenge/verify', methods=['GET', 'POST'])
 def api_challenge_verify():
     return handle_request('/api/challenge/verify', request.method)

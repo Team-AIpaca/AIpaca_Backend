@@ -1,4 +1,5 @@
 # routes/api/detectlang/post.py
+
 import sys
 import json
 import fasttext

@@ -1,4 +1,5 @@
 # routes/api/trans/googletrans/post.py
+
 from googletrans import Translator, LANGUAGES
 import datetime
 import json  # JSON 처리를 위해 추가
