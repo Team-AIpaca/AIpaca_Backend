@@ -1,0 +1,17 @@
+{
+    "acv001": {
+        "is_available": "yes",
+        "start_date": 20240327145513,
+        "end_date": null
+    },
+    "acv002": {
+        "is_available": "yes",
+        "start_date": 20240327145513,
+        "end_date": null
+    },
+    "acv003": {
+        "is_available": "yes",
+        "start_date": 20240320145513,
+        "end_date": 20290329150000
+    }
+}
