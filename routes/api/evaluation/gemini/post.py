@@ -1,10 +1,11 @@
 # routes/api/evaluation/gemini/post.py
-
 import google.generativeai as genai
 import datetime
 import requests
 from flask import request
 import json
+import os
+
 import sys
 import os
 
@@ -74,34 +75,14 @@ def post_response(request_data):
         combined_text = f"{data['Original']} {data['OriginalLang']} {data['Translated']} {data['TranslatedLang']} {data['EvaluationLang']} {instruct_prompt_content}"
         response = model.generate_content(combined_text)
         raw_text = response.candidates[0].content.parts[0].text
-        temp_result_data = raw_text.strip('```json\n').rstrip('```')
+        json_text = raw_text.strip('```json\n').rstrip('```').replace("\n", "\\n")
 
-        # JSON 문자열을 JSON 객체로 변환
-        result_json = json.loads(temp_result_data)
+        temp_result_data = json.loads(json_text)
 
-        # print(result_json)
+        print(json_text)
 
-        # 언어 감지 로직 실행 및 결과 추가
-        translated_lang_detected = detect_language(result_json['RecommandedTrans'].replace('\n', '\\n'))
-        evaluation_lang_detected = detect_language(result_json['Rating'].replace('\n', '\\n'))
-        mismatch_trans = data['TranslatedLang'] != translated_lang_detected
-        mismatch_eval = data['EvaluationLang'] != evaluation_lang_detected
-
-        try:
-            if mismatch_trans or mismatch_eval:
-                response_data["StatusCode"] = 5204
-                response_data["message"] = "Output from the Gemini API in a different language to the one requested by the user"
-                response_data["data"]["mismatchTransLang"] = "yes" if mismatch_trans else "no"
-                response_data["data"]["mismatchEvaluationLang"] = "yes" if mismatch_eval else "no"
-                return response_data, 500
-            else:
-                # 성공 시 결과 데이터 추가
-                response_data["data"]["result"] = result_json
-                return response_data, 200
-        except:
-            response_data["StatusCode"] = 500
-            response_data["message"] = "Unknown Error"
-            return response_data, 500
+        response_data["data"]["result"] = temp_result_data
+        return response_data, 200
 
     except Exception as e:
         if 'API key not valid' in str(e):

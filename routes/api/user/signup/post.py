@@ -7,6 +7,7 @@ from flask import request
 import bcrypt
 import pymysql
 from dotenv import load_dotenv
+import re
 
 # .env 파일에서 환경 변수 로드
 load_dotenv()
@@ -59,6 +60,12 @@ def post_response(request_data):
             "UserAgent": "Present" if user_agent else "Absent"
         }
         return response_structure(400, message, data)
+    
+    # 비밀번호 조건 검사: 8자리 이상, 알파벳 소문자와 숫자 포함
+    password = request_data['password']
+    if len(password) < 8 or not re.search("[a-z]", password) or not re.search("[0-9]", password):
+        message = "Password must be at least 8 characters long and include both letters and numbers."
+        return response_structure(400, message, {"RequestTime": get_current_utc_time()})
 
     # 데이터베이스 연결 및 사용자 등록 처리
     try:

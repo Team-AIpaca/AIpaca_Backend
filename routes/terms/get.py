@@ -42,7 +42,7 @@ def get_response(request_params):
     
     response_data = {
         "StatusCode": 200,
-        "message": "POST request processed. Hello, world!",
+        "message": "GET request processed. Hello, world!",
         "data": {
             "RequestTime": get_current_utc_time(),
             "privacy_policy": privacy_policy,
