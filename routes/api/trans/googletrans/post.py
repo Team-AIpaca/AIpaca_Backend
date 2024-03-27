@@ -10,7 +10,7 @@ def get_current_utc_time():
     return datetime.datetime.now(utc_timezone).isoformat()
 
 # 기본 응답 데이터 구조를 반환하는 함수
-def create_response_data(status_code, message, result=None):
+def create_response_data(status_code, message, result=None, error_info=None):
     response_data = {
         "StatusCode": status_code,
         "message": message,
@@ -18,8 +18,12 @@ def create_response_data(status_code, message, result=None):
             "RequestTime": get_current_utc_time(),
         }
     }
+    # 정상 응답인 경우 result를 사용해 데이터 구성
     if result is not None:
         response_data["data"]["result"] = result
+    # 에러 정보가 있는 경우, 이를 data에 직접 추가
+    if error_info is not None:
+        response_data["data"].update(error_info)
     return response_data
 
 # 결과 데이터 구성 및 출력을 담당하는 함수
@@ -37,10 +41,11 @@ def post_response(request_data):
         if missing_fields and unknown_params:
             message = "Missing fields and Unknown parameters"
         
+        # 에러 응답 시 error_info로 MissingFields와 UnknownParams 추가
         return create_response_data(
             4003, 
             message, 
-            {
+            error_info={
                 "MissingFields": ", ".join(missing_fields) if missing_fields else None,
                 "UnknownParams": ", ".join(unknown_params) if unknown_params else None
             }
@@ -62,11 +67,13 @@ def post_response(request_data):
         return create_response_data(
             4004,
             "Invalid language code",
-            {"InvalidLangs": ", ".join(filter(lambda x: x not in LANGUAGES, [original_lang, translated_lang]))}
+            error_info={
+                "InvalidLangs": ", ".join(filter(lambda x: x not in LANGUAGES, [original_lang, translated_lang]))
+            }
         ), 400
 
     # 텍스트 번역
     translated_text = translator.translate(text, src=original_lang, dest=translated_lang).text
 
-    # 완성된 응답 데이터 구성
+    # 정상 응답 시 result에 Translation 추가
     return create_response_data(200, "Translation successful", {"Translation": translated_text}), 200
