@@ -7,7 +7,7 @@ def get_current_utc_time():
     utc_timezone = datetime.timezone.utc
     return datetime.datetime.now(utc_timezone).isoformat()
 
-def post_response(request_params):
+def get_response(request_params):
     # 응답 데이터와 HTTP 상태 코드를 함께 구성합니다.
     response_data = {
         "StatusCode": 200,
