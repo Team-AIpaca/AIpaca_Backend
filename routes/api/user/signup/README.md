@@ -4,7 +4,7 @@ API to register for membership when membership information is entered.
 # Request
 | HTTP Method | Request URL |
 |-------------|-------------|
-| `POST` | http://{address}:{port}/api/trans/papago |
+| `POST` | http://{address}:{port}/api/user/signup |
 
 ## Request Header
 | Header Name | Notes |
