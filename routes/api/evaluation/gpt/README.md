@@ -1,10 +1,10 @@
-# Gemini AI Evalation API Specs
-API for evaluating translations with the Gemini API.
+# OpenAI GPT AI Evalation API Specs
+API for evaluating translations with the OpenAI GPT API.
 
 # Request
 | HTTP Method | Request URL |
 |-------------|-------------|
-| `POST` | http://{address}:{port}/api/evaluation/gemini |
+| `POST` | http://{address}:{port}/api/evaluation/gpt |
 
 ## Request Header
 | Header Name | Notes |
@@ -14,7 +14,8 @@ API for evaluating translations with the Gemini API.
 ## Request Body
 | Field Name | Required | Type | Notes |
 |------------|----------|------|-------|
-| `GeminiAPIKey` | Yes | `String` | API keys for the Gemini API |
+| `OpenAIAPIKey` | Yes | `String` | API keys for the OpenAI API |
+| `GPTVersion` | Yes | `String` | Write the GPT model name. You can find available models at [Models - OpenAI API](https://platform.openai.com/docs/models/overview). You must use GPT-3.5 or GPT-4. |
 | `Original` | Yes | `String` | Original text. Escape sequences must be preceded by a backslash (\). |
 | `OriginalLang` | Yes | `String` | `Original`'s language code. The `ISO 639-1` code, which must be lowercase. |
 | `Translated` | Yes | `String` | Translated text. Escape sequences must be preceded by a backslash (\). |
@@ -35,7 +36,8 @@ API for evaluating translations with the Gemini API.
 ### POST Request
 ```json
 {
-    "GeminiAPIKey": "Gemini_API_Key_Here",
+    "OpenAIAPIKey": "OpenAI_API_Key_Here",
+	"GPTVersion": "GPT_Model_Name_Here_Example_gpt-4-turbo-preview",
     "Original": "안녕하세요. 반갑습니다. 저는 케빈입니다.",
     "OriginalLang": "ko",
     "TranslatedLang": "Hello, Nice to meet you. My name is Kevin.",

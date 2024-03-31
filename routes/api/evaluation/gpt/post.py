@@ -1,12 +1,12 @@
-# routes/api/evaluation/gemini/post.py
+# routes/api/evaluation/gpt/post.py
 
-import google.generativeai as genai
 import datetime
-import requests
-from flask import request
-import json
-import sys
 import os
+import sys
+import json
+from flask import request
+import requests
+import openai  # OpenAI GPT를 사용하기 위한 패키지 임포트
 
 # 현재 파일의 절대 경로를 구합니다.
 current_file_path = os.path.abspath(__file__)
@@ -41,14 +41,14 @@ def post_response(request_data):
     # 기본 응답 데이터 구조 설정
     response_data = {
         "StatusCode": 200,
-        "message": "Success to request to Gemini!",
+        "message": "Success to request to GPT!",
         "data": {
             "RequestTime": get_current_utc_time()
         }
     }
 
     data = request.get_json() or request_data
-    required_fields = ['GeminiAPIKey', 'Original', 'OriginalLang', 'Translated', 'TranslatedLang', 'EvaluationLang']
+    required_fields = ['OpenAIAPIKey', 'GPTVersion', 'Original', 'OriginalLang', 'Translated', 'TranslatedLang', 'EvaluationLang']
     missing_fields = [field for field in required_fields if field not in data]
     unknown_params = [field for field in data if field not in required_fields]
 
@@ -62,38 +62,41 @@ def post_response(request_data):
         return response_data, 400
 
     try:
-        GOOGLE_API_KEY = data['GeminiAPIKey']
-        genai.configure(api_key=GOOGLE_API_KEY)
-        model = genai.GenerativeModel('gemini-pro')
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        instruct_prompt_path = os.path.join(script_dir, '..', 'prompt', 'Instruct_Prompt.md')
+        # OpenAI API 키 설정
+        openai.api_key = data['OpenAIAPIKey']
+        # GPT 모델 버전에 따라 모델 선택
+        model = f"gpt-{data['GPTVersion']}"
 
-        with open(instruct_prompt_path, 'r', encoding='utf-8') as file:
-            instruct_prompt_content = file.read()
+        prompt = (f"{data['Original']} {data['OriginalLang']} "
+                  f"{data['Translated']} {data['TranslatedLang']} "
+                  f"{data['EvaluationLang']}")
 
-        combined_text = f"{data['Original']} {data['OriginalLang']} {data['Translated']} {data['TranslatedLang']} {data['EvaluationLang']} {instruct_prompt_content}"
-        response = model.generate_content(combined_text)
-        raw_text = response.candidates[0].content.parts[0].text
-        temp_result_data = raw_text.strip('```json\n').rstrip('```')
+        # GPT API를 사용하여 콘텐츠 생성
+        response = openai.Completion.create(
+            engine=model,
+            prompt=prompt,
+            # max_tokens=150 # 최대 토큰수
+        )
 
-        # JSON 문자열을 JSON 객체로 변환
-        result_json = json.loads(temp_result_data)
+        # 응답에서 생성된 텍스트 추출
+        generated_text = response.choices[0].text.strip()
 
-        # print(result_json)
-
+        # 생성된 텍스트를 JSON 형식으로 변환하려고 시도
         try:
+            # JSON 문자열을 JSON 객체로 변환
+            result_json = json.loads(generated_text)
+
             # 성공 시 결과 데이터 추가
             response_data["data"]["result"] = result_json
             return response_data, 200
-        except:
+        except json.JSONDecodeError:
             response_data["StatusCode"] = 500
-            response_data["message"] = "Unknown Error"
+            response_data["message"] = "Failed to decode generated text as JSON"
             return response_data, 500
 
     except Exception as e:
-        if 'API key not valid' in str(e):
-            response_data["StatusCode"] = 4200
-            response_data["message"] = "Invalid API Key. Please check API Key."
-            return response_data, 400
+        response_data["StatusCode"] = 500
+        response_data["message"] = f"An error occurred: {str(e)}"
+        return response_data, 500
 
     return response_data, 200
