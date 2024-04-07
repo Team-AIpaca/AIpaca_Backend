@@ -38,8 +38,8 @@ API for evaluating translations with the Gemini API.
     "GeminiAPIKey": "Gemini_API_Key_Here",
     "Original": "안녕하세요. 반갑습니다. 저는 케빈입니다.",
     "OriginalLang": "ko",
-    "TranslatedLang": "Hello, Nice to meet you. My name is Kevin.",
-    "Translated": "en",
+    "Translated": "Hello, Nice to meet you. My name is Kevin.",
+    "TranslatedLang": "en",
     "EvaluationLang": "ko"
 }
 ```
