@@ -7,6 +7,7 @@ import json
 from flask import request
 import requests
 import openai  # OpenAI GPT를 사용하기 위한 패키지 임포트
+import openai.error  # OpenAI 에러 처리를 위한 모듈 임포트
 
 # 현재 파일의 절대 경로를 구합니다.
 current_file_path = os.path.abspath(__file__)
@@ -94,6 +95,11 @@ def post_response(request_data):
             response_data["message"] = "Failed to decode generated text as JSON"
             return response_data, 500
 
+    except openai.error.AuthenticationError:
+        # OpenAI API 키 인증 실패 에러 처리
+        response_data["StatusCode"] = 401
+        response_data["message"] = "Invalid OpenAI API Key"
+        return response_data, 401
     except Exception as e:
         response_data["StatusCode"] = 500
         response_data["message"] = f"An error occurred: {str(e)}"
