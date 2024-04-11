@@ -37,6 +37,24 @@ def get_current_utc_time():
     utc_timezone = datetime.timezone.utc
     return datetime.datetime.now(utc_timezone).isoformat()
 
+def calculate_max_output_tokens(translated_text, base_ratio=1.5):
+    """
+    번역된 문장의 길이에 기반하여 max_output_tokens 값을 동적으로 계산합니다.
+    
+    :param translated_text: 번역된 문장
+    :param base_ratio: 번역된 문장의 길이에 곱할 비율 (기본값: 1.5)
+    :return: 계산된 max_output_tokens 값
+    """
+    # 공백을 기준으로 번역된 문장을 토큰화하여 토큰 수를 계산
+    translated_tokens = len(translated_text.split())
+    # 입력 토큰 수에 비례하는 max_output_tokens 값을 계산
+    max_output_tokens = int(translated_tokens * base_ratio)
+    
+    # 최소 및 최대 제한을 설정하여 극단적인 경우 처리
+    max_output_tokens = max(50, min(max_output_tokens, 200))
+    
+    return max_output_tokens
+
 def post_response(request_data):
     # 기본 응답 데이터 구조 설정
     response_data = {
@@ -47,7 +65,7 @@ def post_response(request_data):
         }
     }
 
-    data = request.get_json() or request_data
+    data = request_data
     required_fields = ['GeminiAPIKey', 'Original', 'OriginalLang', 'Translated', 'TranslatedLang', 'EvaluationLang']
     missing_fields = [field for field in required_fields if field not in data]
     unknown_params = [field for field in data if field not in required_fields]
@@ -70,7 +88,36 @@ def post_response(request_data):
     try:
         GOOGLE_API_KEY = data['GeminiAPIKey']
         genai.configure(api_key=GOOGLE_API_KEY)
-        model = genai.GenerativeModel('gemini-1.5-pro-latest')
+
+        # Set up the model
+        generation_config = {
+        "temperature": 0.4,
+        "top_p": 0.8,
+        "top_k": 45,
+        "max_output_tokens": calculate_max_output_tokens(data['TranslatedLang']),
+        }
+
+        safety_settings = [
+            {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_NONE"
+            },
+            {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "threshold": "BLOCK_NONE"
+            },
+            {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "threshold": "BLOCK_NONE"
+            },
+            {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "threshold": "BLOCK_NONE"
+            },
+        ]
+
+        model = genai.GenerativeModel('gemini-1.5-pro-latest', generation_config=generation_config, safety_settings=safety_settings)
+
         script_dir = os.path.dirname(os.path.abspath(__file__))
         instruct_prompt_path = os.path.join(script_dir, '..', 'prompt', 'Instruct_Prompt.md')
 
