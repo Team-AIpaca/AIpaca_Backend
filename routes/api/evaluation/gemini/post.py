@@ -52,6 +52,12 @@ def post_response(request_data):
     missing_fields = [field for field in required_fields if field not in data]
     unknown_params = [field for field in data if field not in required_fields]
 
+    # GeminiAPIKey가 비어 있는지 확인
+    if not data['GeminiAPIKey'].strip():
+        response_data["StatusCode"] = 4201
+        response_data["message"] = "GeminiAPIKey is required and cannot be empty."
+        return response_data, 400
+
     if missing_fields or unknown_params:
         response_data["StatusCode"] = 4002 if missing_fields else 4003
         response_data["message"] = "Missing fields" if missing_fields else "Unknown parameters"
@@ -64,7 +70,7 @@ def post_response(request_data):
     try:
         GOOGLE_API_KEY = data['GeminiAPIKey']
         genai.configure(api_key=GOOGLE_API_KEY)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-1.5-pro-latest')
         script_dir = os.path.dirname(os.path.abspath(__file__))
         instruct_prompt_path = os.path.join(script_dir, '..', 'prompt', 'Instruct_Prompt.md')
 
