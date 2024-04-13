@@ -125,6 +125,22 @@ Example:
 }
 ```
 
+### Parsing Error
+When parse from Gemini API, return raw text in data > result
+
+Example:
+```json
+{
+  "StatusCode": 5010,
+  "message": "Error parsing JSON",
+  "data": {
+    "RequestTime": "2024-03-26T12:36:32.755601+00:00",
+    "result": "{\n    \"Score\": 100,\n    \"RecommandedTrans\": \"I dream of being an octopus, in the dream of an octopus, anything can happen\\nI fall asleep as an octopus, and as I fall asleep, the journey begins\\n\\nWhen I climb a high mountain, I become a green octopus\\nWhen I hide in a field of roses, I turn into a red octopus\\nCrossing the pedestrian crossing, I transform into a striped octopus\\n\\nFlying through the night sky, I become a five-colored brilliant octopus\\nThe deep sea is too lonely\\nCold, dark, and sometimes scary\\nThat's why I dream every day\\nThis place is really gloomy\",\n    \"Rating\": \"The translation is excellent and captures the essence and meaning of the original text effectively. It maintains the dreamlike and imaginative quality of the text while ensuring clarity in expression. The use of vivid imagery and creative descriptions enhances the overall impact of the translation. Well done!\"\n}"
+  }
+}
+```
+
+
 ### Unknown Server Error
 If an unknown error occurs while checking the language value, the error message `Unknown Server Error` is displayed.
 

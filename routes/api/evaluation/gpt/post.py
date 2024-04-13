@@ -1,58 +1,54 @@
 # routes/api/evaluation/gpt/post.py
 
-import datetime
 import os
-import sys
 import json
+import datetime
 from flask import request
-import requests
-import openai  # OpenAI GPT를 사용하기 위한 패키지 임포트
-import openai.error  # OpenAI 에러 처리를 위한 모듈 임포트
+from openai import OpenAI
 
-# 현재 파일의 절대 경로를 구합니다.
-current_file_path = os.path.abspath(__file__)
-
-# 현재 파일로부터 상위 4개 디렉토리로 이동하여 env_manage.py가 위치한 디렉토리의 경로를 구합니다.
-env_manage_directory = os.path.join(current_file_path, '../../../../')
-
-# 이 경로를 sys.path에 추가합니다.
-sys.path.insert(0, env_manage_directory)
-
-# 이제 env_manage.py를 임포트할 수 있습니다.
-from env_manage import get_env_variable
-
-def detect_language(text):
-    # .env 파일에서 FLASK_RUN_PORT 값을 가져옵니다.
-    flask_run_port = get_env_variable('FLASK_RUN_PORT')
-    # 요청 URL을 구성합니다.
-    url = f"http://localhost:{flask_run_port}/api/detectlang"
-    # 요청 본문을 구성합니다.
-    payload = {"text": text}
-    # 요청을 보냅니다.
-    response = requests.post(url, json=payload)
-    # 응답 JSON을 파싱하여 언어 코드를 반환합니다.
-    return response.json().get('data', {}).get('result')
-
-# UTC 타임존 객체 생성 및 현재 시간을 UTC로 가져오기
 def get_current_utc_time():
+    """현재 UTC 시간을 ISO 형식 문자열로 반환합니다."""
     utc_timezone = datetime.timezone.utc
     return datetime.datetime.now(utc_timezone).isoformat()
 
+def process_response_data(data):
+    """JSON 객체를 정렬된 이스케이프 처리되지 않은 문자열로 변환합니다."""
+    pretty_result = json.dumps(data, ensure_ascii=False, indent=4)
+    return pretty_result
+
 def post_response(request_data):
-    # 기본 응답 데이터 구조 설정
+    """
+    OpenAI GPT 모델을 사용하여 요청을 처리하고 응답을 반환합니다.
+    
+    Args:
+        request_data (dict): 클라이언트로부터 받은 요청 데이터를 포함하는 딕셔너리입니다.
+    
+    Returns:
+        tuple: 응답 데이터 딕셔너리와 HTTP 상태 코드를 포함하는 튜플입니다.
+    """
+    # 기본 응답 구조 설정
     response_data = {
         "StatusCode": 200,
-        "message": "Success to request to GPT!",
+        "message": "Success to request to OpenAI!",
         "data": {
             "RequestTime": get_current_utc_time()
         }
     }
 
-    data = request.get_json() or request_data
-    required_fields = ['OpenAIAPIKey', 'GPTVersion', 'Original', 'OriginalLang', 'Translated', 'TranslatedLang', 'EvaluationLang']
-    missing_fields = [field for field in required_fields if field not in data]
-    unknown_params = [field for field in data if field not in required_fields]
+    # 필수 필드 목록
+    required_fields = ['OpenAIAPIKey', 'Original', 'OriginalLang', 'Translated', 'TranslatedLang', 'EvaluationLang', 'GPTVersion']
+    # 누락된 필드 검사
+    missing_fields = [field for field in required_fields if field not in request_data]
+    # 알 수 없는 매개변수 검사
+    unknown_params = [field for field in request_data if field not in required_fields]
 
+    # 필수 API 키 검사
+    if not request_data.get('OpenAIAPIKey', '').strip():
+        response_data["StatusCode"] = 4201
+        response_data["message"] = "OpenAIAPIKey is required and cannot be empty."
+        return response_data, 400
+
+    # 필수 필드 또는 알 수 없는 매개변수가 있을 경우 응답 처리
     if missing_fields or unknown_params:
         response_data["StatusCode"] = 4002 if missing_fields else 4003
         response_data["message"] = "Missing fields" if missing_fields else "Unknown parameters"
@@ -63,46 +59,46 @@ def post_response(request_data):
         return response_data, 400
 
     try:
-        # OpenAI API 키 설정
-        openai.api_key = data['OpenAIAPIKey']
-        # GPT 모델 버전에 따라 모델 선택
-        model = f"gpt-{data['GPTVersion']}"
+        # OpenAI 클라이언트 초기화
+        client = OpenAI(api_key=request_data['OpenAIAPIKey'])
 
-        prompt = (f"{data['Original']} {data['OriginalLang']} "
-                  f"{data['Translated']} {data['TranslatedLang']} "
-                  f"{data['EvaluationLang']}")
+        # 인스트럭션 파일 경로 설정
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        instruct_prompt_path = os.path.join(script_dir, '..', 'prompt', 'Instruct_Prompt.md')
+        # 인스트럭션 파일 읽기
+        with open(instruct_prompt_path, 'r', encoding='utf-8') as file:
+            instruct_prompt_content = file.read()
 
-        # GPT API를 사용하여 콘텐츠 생성
-        response = openai.Completion.create(
-            engine=model,
-            prompt=prompt,
-            # max_tokens=150 # 최대 토큰수
+        # 요청 데이터를 JSON 형식으로 조합
+        combined_text = json.dumps({
+            "Original": request_data['Original'],
+            "OriginalLang": request_data['OriginalLang'],
+            "Translated": request_data['Translated'],
+            "TranslatedLang": request_data['TranslatedLang'],
+            "EvaluationLang": request_data['EvaluationLang']
+        }, ensure_ascii=False)
+
+        # 요청 및 인스트럭션을 조합
+        message_content = f"{combined_text}\n{instruct_prompt_content}"
+
+        # OpenAI GPT 모델로 요청 처리
+        completion = client.chat.completions.create(
+            model=request_data['GPTVersion'],
+            messages=[
+                {"role": "user", "content": message_content}
+            ],
+            temperature=0.25,  # 낮은 불확실성
+            top_p=0.8,  # 높은 다양성
+            session_id=None  # 세션 ID 없음
         )
 
-        # 응답에서 생성된 텍스트 추출
-        generated_text = response.choices[0].text.strip()
+        # 응답 처리 및 변환
+        response_text = json.loads(completion.choices[0].message.content)
+        json_process = process_response_data(response_text)
+        response_data["data"]["result"] = json.loads(json_process)  # JSON 문자열을 다시 딕셔너리로 변환
+        return response_data, 200
 
-        # 생성된 텍스트를 JSON 형식으로 변환하려고 시도
-        try:
-            # JSON 문자열을 JSON 객체로 변환
-            result_json = json.loads(generated_text)
-
-            # 성공 시 결과 데이터 추가
-            response_data["data"]["result"] = result_json
-            return response_data, 200
-        except json.JSONDecodeError:
-            response_data["StatusCode"] = 500
-            response_data["message"] = "Failed to decode generated text as JSON"
-            return response_data, 500
-
-    except openai.error.AuthenticationError:
-        # OpenAI API 키 인증 실패 에러 처리
-        response_data["StatusCode"] = 401
-        response_data["message"] = "Invalid OpenAI API Key"
-        return response_data, 401
     except Exception as e:
         response_data["StatusCode"] = 500
-        response_data["message"] = f"An error occurred: {str(e)}"
+        response_data["message"] = f"Unknown error occurred: {str(e)}"
         return response_data, 500
-
-    return response_data, 200

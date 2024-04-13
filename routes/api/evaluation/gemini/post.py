@@ -116,7 +116,7 @@ def post_response(request_data):
                 response_data["data"]["result"] = result_data
             except json.JSONDecodeError as e:
                 # JSON 파싱 오류 처리
-                response_data["StatusCode"] = 500
+                response_data["StatusCode"] = 5010
                 response_data["message"] = f"Error parsing JSON: {str(e)}"
                 response_data["data"]["result"] = cleaned_text  # 오류 발생 시 원본 텍스트를 반환
                 return response_data, 500
