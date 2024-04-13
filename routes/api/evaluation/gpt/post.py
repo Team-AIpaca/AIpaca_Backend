@@ -89,7 +89,7 @@ def post_response(request_data):
             ],
             temperature=0.25,  # 낮은 불확실성
             top_p=0.8,  # 높은 다양성
-            session_id=None  # 세션 ID 없음
+            user=None  # 세션 ID 없음
         )
 
         # 응답 처리 및 변환
