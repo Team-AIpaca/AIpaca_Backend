@@ -40,7 +40,10 @@ def post_response(request_data):
     }
 
     data = request_data
+    # 필수 필드
     required_fields = ['GeminiAPIKey', 'Original', 'OriginalLang', 'Translated', 'TranslatedLang', 'EvaluationLang']
+    # 검사할 금지된 단어 목록
+    disallowed_words = ['TranslatedLang', 'GeminiAPIKey', 'Original', 'OriginalLang', 'Translated', 'EvaluationLang', 'StatusCode', 'message', 'data', 'RequestTime', 'result']
     missing_fields = [field for field in required_fields if field not in data]
     unknown_params = [field for field in data if field not in required_fields]
 
@@ -57,6 +60,16 @@ def post_response(request_data):
         if unknown_params:
             response_data["data"]["UnknownParams"] = ", ".join(unknown_params)
         return response_data, 400
+    
+    # 필수 필드들의 값에서 금지된 단어가 있는지 검사
+    for field in required_fields:
+        # 필드 값 가져오기, 값이 없다면 빈 문자열을 사용
+        value = str(request_data.get(field, "")).strip().lower()
+        # 금지된 단어가 포함되어 있는지 검사
+        if any(disallowed_word.lower() in value for disallowed_word in disallowed_words):
+            response_data["StatusCode"] = 4004
+            response_data["message"] = f"A value is not allowed in {field}: {request_data[field]}"
+            return response_data, 400
 
     try:
         GOOGLE_API_KEY = data['GeminiAPIKey']
@@ -106,7 +119,10 @@ def post_response(request_data):
             raw_text = response_json['candidates'][0]['content']['parts'][0]['text']
 
             # ```json\n와 \n```을 제거합니다. 이 과정에서 리터럴 개행 문자 변환은 수행하지 않습니다.
-            cleaned_text = raw_text.strip('` \n').lstrip('json\n')
+            # cleaned_text = raw_text.strip('` \n').lstrip('json\n')
+            cleaned_text = raw_text[7+1:-5]
+            
+            print(cleaned_text)
 
             try:
                 # JSON 문자열 파싱 시도
@@ -116,7 +132,7 @@ def post_response(request_data):
                 response_data["data"]["result"] = result_data
             except json.JSONDecodeError as e:
                 # JSON 파싱 오류 처리
-                response_data["StatusCode"] = 5010
+                response_data["StatusCode"] = 500
                 response_data["message"] = f"Error parsing JSON: {str(e)}"
                 response_data["data"]["result"] = cleaned_text  # 오류 발생 시 원본 텍스트를 반환
                 return response_data, 500
@@ -128,14 +144,13 @@ def post_response(request_data):
             return response_data, response.status_code
 
     except Exception as e:
-        response_data["StatusCode"] = 500
-        response_data["message"] = f"Unknown error occurred: {str(e)}"
-        return response_data, 500
-
-    except Exception as e:
         if 'API key not valid' in str(e):
             response_data["StatusCode"] = 4200
             response_data["message"] = "Invalid API Key. Please check API Key."
             return response_data, 400
+        else:
+            response_data["StatusCode"] = 500
+            response_data["message"] = f"Unknown error occurred: {str(e)}"
+            return response_data, 500
 
     return response_data, 200
