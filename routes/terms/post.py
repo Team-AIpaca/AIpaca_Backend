@@ -1,3 +1,5 @@
+# routes/terms/post.py
+
 import datetime
 import os
 import sys
@@ -33,13 +35,14 @@ def get_language(request_data):
     return language_code if language_code in supported_languages else default_language
 
 def post_response(request_data):
-    """요청 데이터에 기반하여 응답 데이터를 구성하고 반환하는 함수"""
+    # 요청 데이터가 None이면 빈 딕셔너리로 처리
+    request_data = request_data or {}
     language = get_language(request_data)
-    
+
     # 언어에 맞는 약관 URL 생성
     terms_of_service = f"{domain}/terms/{language}/terms_of_service.md"
     privacy_policy = f"{domain}/terms/{language}/privacy_policy.md"
-    
+
     response_data = {
         "StatusCode": 200,
         "message": "POST request processed. Hello, world!",
@@ -49,5 +52,5 @@ def post_response(request_data):
             "terms_of_service": terms_of_service
         }
     }
-    
+
     return response_data, 200
