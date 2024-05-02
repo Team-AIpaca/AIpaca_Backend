@@ -30,11 +30,17 @@ def handle_request(endpoint_path, method):
     content_type = get_content_type()
     module_path = f"routes{endpoint_path.replace('/', '.')}.{method.lower()}"
     method_function = __import__(module_path, fromlist=[''])
+
     if request.method == 'GET':
         request_params = request.args.to_dict()
         data, status_code = method_function.get_response(request_params)
     else:
-        request_data = request.get_json()
+        # POST 요청에 대해 JSON 데이터가 필요없을 경우 예외 처리
+        try:
+            request_data = request.get_json()
+        except Exception:
+            request_data = None  # JSON 데이터 없이도 요청을 처리할 수 있게 None 할당
+
         data, status_code = method_function.post_response(request_data)
     return response_format(data, status_code, content_type)
 
