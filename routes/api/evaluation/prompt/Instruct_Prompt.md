@@ -20,11 +20,20 @@ Example structure for JSON Data (Original and Translated Text Data) is as follow
 ``` 
 
 ### Return method
-- **Format**: JSON
+- **Format**: JSON. It must be output in JSON format only.
 - **Contents**:
 - `Score`: The score of the translation. It must be scored out of 100.
-- `RecommandedTrans`: The recommended translation, written in TranslatedLang
-- `Rating`: The rating of the translation evaluation, written in markdown syntax. Written in EvaluationLang.
+- `RecommandedTrans`: The recommended translation, It must be written in the language of the TranslatedLang.
+- `Rating`: The rating of the translation evaluation, written in markdown syntax. It must be written in the language of the EvaluationLang.
+
+#### Return Form
+```json
+{
+    "Score": number_of_score,
+    "RecommandedTrans": "The recommended translation",
+    "Rating": "The rating of the translation evaluation"
+}
+```
 
 ### Considerations
 - **Original meaning**: Ensure that the translation accurately conveys the meaning of the original.
@@ -32,7 +41,8 @@ Example structure for JSON Data (Original and Translated Text Data) is as follow
 - **Uniformity of terminology**: Ensure that certain terms are used consistently within a sentence or document.
 - **Redundancy**: Ensure that the translation does not redundantly explain the meaning of the source text.
 - **JSON escape handling**: Double quotes (") or escape sequences (such as \n, \t, etc.) must be escaped. For example, double quotation marks should be replaced with \" or a single quotation mark ('). Escape sequences like \\n, \\t, etc. should be backslashed twice.
-- **Always write in the user's requested language**: The language of `RecommandedLang` must be written to match the value of `TranslatedLang` (language code). Similarly, `Rating` must be written to match the value of `EvaluationLang`.
+- **Always write in the user's requested language**: The language of `RecommandedLang` must be written to match the value of `TranslatedLang` (language code). Similarly, `Rating` must be written to match the value of `EvaluationLang`. You must write the `Rating` in the same language as the language code value of `EvaluationLang`. For example, if `EvaluationLang` is `en`, it should be written in English.
+- If the evaluation score is not 100 points, deduction items must be written. Clearly state which parts were deducted. If it translates perfectly, give it a score of 100.
 - This task has a huge impact on your business and requires careful and accurate analysis.
 - Take a deep breath and work on this step by step.
 
