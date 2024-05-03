@@ -8,17 +8,8 @@ import sys
 import re
 from flask import request
 
-# 현재 파일의 절대 경로를 구합니다.
-current_file_path = os.path.abspath(__file__)
-
-# 현재 파일로부터 상위 4개 디렉토리로 이동하여 env_manage.py가 위치한 디렉토리의 경로를 구합니다.
-env_manage_directory = os.path.join(current_file_path, '../../../../')
-
-# 이 경로를 sys.path에 추가합니다.
-sys.path.insert(0, env_manage_directory)
-
-# 이제 env_manage.py를 임포트할 수 있습니다.
-from env_manage import get_env_variable
+# 언어 코드 확인 API 주소
+check_lang_code = "https://apis.uiharu.dev/trans/api2.php"
 
 def get_current_utc_time():
     utc_timezone = datetime.timezone.utc
@@ -63,13 +54,58 @@ def post_response(request_data):
     
     # 필수 필드들의 값에서 금지된 단어가 있는지 검사
     for field in required_fields:
-        # 필드 값 가져오기, 값이 없다면 빈 문자열을 사용
-        value = str(request_data.get(field, "")).strip().lower()
-        # 금지된 단어가 포함되어 있는지 검사
-        if any(disallowed_word.lower() in value for disallowed_word in disallowed_words):
-            response_data["StatusCode"] = 4004
-            response_data["message"] = f"A value is not allowed in {field}: {request_data[field]}"
+        field_value = str(request_data.get(field, "")).strip().lower()  # 필드 값을 소문자로 변환 및 공백 제거
+        # 문자열 시작 부분에서 금지된 단어가 바로 나오는 경우만 검사
+        for disallowed_word in disallowed_words:
+            # 패턴: 문자열 시작 부분에서 바로 금지된 단어가 나오고, 그 뒤에 바로 문자열 끝나는 경우
+            pattern = rf"^{disallowed_word}$"
+            if re.match(pattern, field_value, re.IGNORECASE):  # 대소문자 무시하고 검색
+                response_data["StatusCode"] = 4004
+                response_data["message"] = f"A value is not allowed in {field}: {request_data[field]}"
+                return response_data, 400
+            # 문자열의 시작 부분이 금지된 단어인 경우
+            if field_value.startswith(disallowed_word):  # 금지된 단어로 시작하는 경우에 앞에 공백 추가
+                request_data[field] = " " + request_data[field]
+                
+    # 언어 코드 검증
+    headers = {'Content-Type': 'application/json'}
+    original_lang_check = requests.post(
+        check_lang_code,
+        json={"transSentence": data['Original'], "targetLang": "ko"},
+        headers=headers
+    )
+    translated_lang_check = requests.post(
+        check_lang_code,
+        json={"transSentence": data['Translated'], "targetLang": "ko"},
+        headers=headers
+    )
+
+    if original_lang_check.status_code == 200 and translated_lang_check.status_code == 200:
+        original_lang_result = original_lang_check.json()['detectedLanguage']
+        translated_lang_result = translated_lang_check.json()['detectedLanguage']
+        
+        # 언어 코드 검증 전 데이터 정규화
+        normalized_original_lang = data['OriginalLang'].strip().lower()
+        normalized_translated_lang = data['TranslatedLang'].strip().lower()
+
+        # API 호출 결과 정규화
+        normalized_original_result = original_lang_result.strip().lower()
+        normalized_translated_result = translated_lang_result.strip().lower()
+
+        if normalized_original_result != normalized_original_lang:
+            response_data["StatusCode"] = 4005
+            response_data["message"] = f"Language mismatch for Original: Expected {normalized_original_lang}, Detected {normalized_original_result}"
             return response_data, 400
+
+        if normalized_translated_result != normalized_translated_lang:
+            response_data["StatusCode"] = 4006
+            response_data["message"] = f"Language mismatch for Translated: Expected {normalized_translated_lang}, Detected {normalized_translated_result}"
+            return response_data, 400
+
+    else:
+        response_data["StatusCode"] = 500
+        response_data["message"] = "Failed to verify languages with the language detection API."
+        return response_data, 500
 
     try:
         GOOGLE_API_KEY = data['GeminiAPIKey']

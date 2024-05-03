@@ -6,6 +6,9 @@ import datetime
 from flask import request
 from openai import OpenAI
 
+# 언어 코드 확인 API 주소
+check_lang_code = "https://apis.uiharu.dev/trans/api2.php"
+
 def get_current_utc_time():
     """현재 UTC 시간을 ISO 형식 문자열로 반환합니다."""
     utc_timezone = datetime.timezone.utc
@@ -57,6 +60,46 @@ def post_response(request_data):
         if unknown_params:
             response_data["data"]["UnknownParams"] = ", ".join(unknown_params)
         return response_data, 400
+
+    # 언어 코드 검증
+    headers = {'Content-Type': 'application/json'}
+    original_lang_check = requests.post(
+        check_lang_code,
+        json={"transSentence": data['Original'], "targetLang": "ko"},
+        headers=headers
+    )
+    translated_lang_check = requests.post(
+        check_lang_code,
+        json={"transSentence": data['Translated'], "targetLang": "ko"},
+        headers=headers
+    )
+
+    if original_lang_check.status_code == 200 and translated_lang_check.status_code == 200:
+        original_lang_result = original_lang_check.json()['detectedLanguage']
+        translated_lang_result = translated_lang_check.json()['detectedLanguage']
+        
+        # 언어 코드 검증 전 데이터 정규화
+        normalized_original_lang = data['OriginalLang'].strip().lower()
+        normalized_translated_lang = data['TranslatedLang'].strip().lower()
+
+        # API 호출 결과 정규화
+        normalized_original_result = original_lang_result.strip().lower()
+        normalized_translated_result = translated_lang_result.strip().lower()
+
+        if normalized_original_result != normalized_original_lang:
+            response_data["StatusCode"] = 4005
+            response_data["message"] = f"Language mismatch for Original: Expected {normalized_original_lang}, Detected {normalized_original_result}"
+            return response_data, 400
+
+        if normalized_translated_result != normalized_translated_lang:
+            response_data["StatusCode"] = 4006
+            response_data["message"] = f"Language mismatch for Translated: Expected {normalized_translated_lang}, Detected {normalized_translated_result}"
+            return response_data, 400
+
+    else:
+        response_data["StatusCode"] = 500
+        response_data["message"] = "Failed to verify languages with the language detection API."
+        return response_data, 500
 
     try:
         # OpenAI 클라이언트 초기화

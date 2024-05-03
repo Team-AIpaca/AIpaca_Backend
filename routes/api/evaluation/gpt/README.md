@@ -93,6 +93,20 @@ Example:
 }
 ```
 
+### Response the request If there is a mismatch between the language value entered and the actual language code
+If there is a mismatch between the entered language value and the actual language code, output which field is different.
+
+Example:
+```json
+{
+  "StatusCode": 4004,
+  "message": "A value is not allowed in ko: en",
+  "data": {
+    "RequestTime": "2024-03-27T03:01:32.913821+00:00"
+  }
+}
+```
+
 ### Invalid API Key
 Outputs an error if an invalid API key is entered.
 
