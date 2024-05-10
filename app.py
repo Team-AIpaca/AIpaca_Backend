@@ -119,6 +119,16 @@ def api_challenge_verify():
 def version():
     return handle_request('/version', request.method)
 
+# 백업
+@app.route('/api/data/backup', methods=['GET', 'POST'])
+def notice():
+    return handle_request('/api/data/backup', request.method)
+
+# 복원
+@app.route('/api/data/restore', methods=['GET', 'POST'])
+def notice():
+    return handle_request('/api/data/restore', request.method)
+
 # 공지사항
 @app.route('/notice', methods=['GET', 'POST'])
 def notice():
