@@ -121,12 +121,12 @@ def version():
 
 # 백업
 @app.route('/api/data/backup', methods=['GET', 'POST'])
-def notice():
+def backup():
     return handle_request('/api/data/backup', request.method)
 
 # 복원
 @app.route('/api/data/restore', methods=['GET', 'POST'])
-def notice():
+def restore():
     return handle_request('/api/data/restore', request.method)
 
 # 공지사항
