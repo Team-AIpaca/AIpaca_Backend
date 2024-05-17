@@ -1,10 +1,7 @@
-# routes/api/evaluation/gemini/post.py
-
 import requests
 import json
 import datetime
 import os
-import sys
 import re
 from flask import request
 
@@ -154,24 +151,28 @@ def post_response(request_data):
             response_json = response.json()
             raw_text = response_json['candidates'][0]['content']['parts'][0]['text']
 
-            # ```json\n와 \n```을 제거합니다. 이 과정에서 리터럴 개행 문자 변환은 수행하지 않습니다.
-            # cleaned_text = raw_text.strip('` \n').lstrip('json\n')
-            cleaned_text = raw_text[7+1:-5]
+            # JSON을 올바르게 파싱하기 위해 올바른 방법으로 텍스트를 잘라내기
+            json_start = raw_text.find("{")
+            json_end = raw_text.rfind("}") + 1
+            cleaned_text = raw_text[json_start:json_end]
             
-            print(cleaned_text)
-
             try:
                 # JSON 문자열 파싱 시도
                 result_data = json.loads(cleaned_text)
-
-                # 성공적으로 파싱된 결과를 response_data에 할당
                 response_data["data"]["result"] = result_data
-            except json.JSONDecodeError as e:
-                # JSON 파싱 오류 처리
-                response_data["StatusCode"] = 500
-                response_data["message"] = f"Error parsing JSON: {str(e)}"
-                response_data["data"]["result"] = cleaned_text  # 오류 발생 시 원본 텍스트를 반환
-                return response_data, 500
+            except json.JSONDecodeError:
+                try:
+                    # 두 번째 JSON 파싱 시도
+                    cleaned_text = cleaned_text.replace('\n', '').replace('    ', '')  # 개행 문자와 들여쓰기 제거
+                    result_str_escaped = cleaned_text.encode().decode('unicode_escape')
+                    result_data = json.loads(result_str_escaped)
+                    response_data["data"]["result"] = result_data
+                except json.JSONDecodeError as e:
+                    # JSON 파싱 오류 처리
+                    response_data["StatusCode"] = 500
+                    response_data["message"] = f"Error parsing JSON: {str(e)}"
+                    response_data["data"]["result"] = cleaned_text  # 오류 발생 시 원본 텍스트를 반환
+                    return response_data, 500
 
             return response_data, 200
         else:

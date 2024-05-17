@@ -3,8 +3,10 @@
 import os
 import json
 import datetime
+import requests
 from flask import request
 from openai import OpenAI
+from openai.types.chat import ChatCompletion
 
 # 언어 코드 확인 API 주소
 check_lang_code = "https://apis.uiharu.dev/trans/api2.php"
@@ -46,9 +48,14 @@ def post_response(request_data):
     unknown_params = [field for field in request_data if field not in required_fields]
 
     # 필수 API 키 검사
-    if not request_data.get('OpenAIAPIKey', '').strip():
+    api_key = request_data.get('OpenAIAPIKey', '').strip()
+    if not api_key:
         response_data["StatusCode"] = 4201
         response_data["message"] = "OpenAIAPIKey is required and cannot be empty."
+        return response_data, 400
+    if not api_key.startswith('sk-'):
+        response_data["StatusCode"] = 4202
+        response_data["message"] = "Invalid OpenAIAPIKey format. It should start with 'sk-'."
         return response_data, 400
 
     # 필수 필드 또는 알 수 없는 매개변수가 있을 경우 응답 처리
@@ -65,12 +72,12 @@ def post_response(request_data):
     headers = {'Content-Type': 'application/json'}
     original_lang_check = requests.post(
         check_lang_code,
-        json={"transSentence": data['Original'], "targetLang": "ko"},
+        json={"transSentence": request_data['Original'], "targetLang": "ko"},
         headers=headers
     )
     translated_lang_check = requests.post(
         check_lang_code,
-        json={"transSentence": data['Translated'], "targetLang": "ko"},
+        json={"transSentence": request_data['Translated'], "targetLang": "ko"},
         headers=headers
     )
 
@@ -79,8 +86,8 @@ def post_response(request_data):
         translated_lang_result = translated_lang_check.json()['detectedLanguage']
         
         # 언어 코드 검증 전 데이터 정규화
-        normalized_original_lang = data['OriginalLang'].strip().lower()
-        normalized_translated_lang = data['TranslatedLang'].strip().lower()
+        normalized_original_lang = request_data['OriginalLang'].strip().lower()
+        normalized_translated_lang = request_data['TranslatedLang'].strip().lower()
 
         # API 호출 결과 정규화
         normalized_original_result = original_lang_result.strip().lower()
@@ -103,7 +110,7 @@ def post_response(request_data):
 
     try:
         # OpenAI 클라이언트 초기화
-        client = OpenAI(api_key=request_data['OpenAIAPIKey'])
+        client = OpenAI(api_key=api_key)
 
         # 인스트럭션 파일 경로 설정
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -131,8 +138,7 @@ def post_response(request_data):
                 {"role": "user", "content": message_content}
             ],
             temperature=0.25,  # 낮은 불확실성
-            top_p=0.8,  # 높은 다양성
-            user=None  # 세션 ID 없음
+            top_p=0.8  # 높은 다양성
         )
 
         # 응답 처리 및 변환
@@ -142,6 +148,11 @@ def post_response(request_data):
         return response_data, 200
 
     except Exception as e:
-        response_data["StatusCode"] = 500
-        response_data["message"] = f"Unknown error occurred: {str(e)}"
+        error_message = str(e)
+        if 'invalid_api_key' in error_message:
+            response_data["StatusCode"] = 401
+            response_data["message"] = "Invalid API key provided."
+        else:
+            response_data["StatusCode"] = 500
+            response_data["message"] = f"Unknown error occurred: {error_message}"
         return response_data, 500
